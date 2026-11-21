@@ -6,7 +6,8 @@ from playwright.sync_api import sync_playwright, expect
 from PIL import Image
 
 ROOT=Path(__file__).resolve().parents[1]
-QA=ROOT/'.qa'
+QA=ROOT/'.qa/revision'
+QA.mkdir(parents=True,exist_ok=True)
 checks=[]
 def passed(text):
     checks.append(text)
@@ -43,6 +44,11 @@ with sync_playwright() as p:
     expect(page.locator('[data-panel]')).to_have_count(3)
     expect(page.locator('#photo-tray button')).to_have_count(2)
     passed('two local samples automatically fill three panels')
+    page.locator('[data-panel="2"]').click()
+    assert page.locator('#panel-photo').input_value()=='1'
+    assert [page.locator(selector).input_value() for selector in ['#zoom','#pan-x','#pan-y']]==['160','100','84']
+    passed('studio opens with the intended pier detail crop')
+    page.locator('[data-panel="0"]').click()
     before=page.locator('#cover').evaluate('(c)=>c.toDataURL()')
     page.get_by_role('textbox',name='Title',exact=True).fill('Night Run')
     page.wait_for_function('document.querySelector("#title-count").textContent==="9 / 26"')

@@ -7,6 +7,26 @@ export const PALETTES = {
 };
 const processed = new WeakMap();
 
+const PHOTO_TONES = {
+  sunset: { saturation:.80, amount:.50, shadow:[30,19,30], highlight:[1.03,.87,.58] },
+  neon: { saturation:.84, amount:.62, shadow:[22,11,54], highlight:[1.03,.83,.85] },
+  noir: { saturation:.30, amount:.35, shadow:[34,32,30], highlight:[.72,.64,.54] },
+};
+
+export function gradePixel(red, green, blue, grade) {
+  const tone=PHOTO_TONES[grade];
+  if(!tone)return [red,green,blue];
+  const luminance=red*.299+green*.587+blue*.114;
+  // Retain naturally warm subject color where the violet ink would cool it.
+  const amount=grade==='neon'?tone.amount*(1-Math.min(.60,Math.max(0,red-blue)/125)):tone.amount;
+  const channels=[red,green,blue];
+  return channels.map((channel,index)=>{
+    const muted=luminance+(channel-luminance)*tone.saturation;
+    const target=tone.shadow[index]+luminance*tone.highlight[index];
+    return Math.max(0,Math.min(255,muted+(target-muted)*amount));
+  });
+}
+
 // Local photo -> inked print: gentle color quantization and luminance contours.
 // Only the two supplied samples or a user's decoded local image enter this cache.
 export function inkPhoto(image, grade) {
@@ -18,7 +38,9 @@ export function inkPhoto(image, grade) {
   layer.width = Math.round(image.naturalWidth*scale);
   layer.height = Math.round(image.naturalHeight*scale);
   const g = layer.getContext('2d',{willReadFrequently:true});
-  g.filter = grade === 'noir' ? 'saturate(0.26) contrast(1.22) sepia(0.24)' : 'saturate(0.88) contrast(1.17) sepia(0.10)';
+  g.filter = grade === 'noir' ? 'saturate(0.38) contrast(1.18)'
+    : grade === 'sunset' ? 'saturate(0.82) contrast(1.15)'
+    : 'saturate(0.86) contrast(1.14)';
   g.drawImage(image,0,0,layer.width,layer.height);
   g.filter='none';
   const pixels = g.getImageData(0,0,layer.width,layer.height);
@@ -27,10 +49,11 @@ export function inkPhoto(image, grade) {
   const width = layer.width;
   for (let y=1;y<layer.height-1;y++) for (let x=1;x<width-1;x++) {
     const i=(y*width+x)*4;
+    const toned=gradePixel(original[i],original[i+1],original[i+2],grade);
     const lum = at => original[at]*.299+original[at+1]*.587+original[at+2]*.114;
     const edge = Math.abs(lum(i-4)-lum(i+4))+Math.abs(lum(i-width*4)-lum(i+width*4));
-    const outline = edge>105 ? .65 : edge>65 ? .85 : 1;
-    for(let c=0;c<3;c++) data[i+c]=(Math.round(original[i+c]/22)*22*.32+original[i+c]*.68)*outline;
+    const outline = edge>92 ? .67 : edge>58 ? .86 : 1;
+    for(let c=0;c<3;c++) data[i+c]=(Math.round(toned[c]/22)*22*.4+toned[c]*.6)*outline;
   }
   g.putImageData(pixels,0,0);
   versions[grade]=layer;
@@ -95,7 +118,7 @@ function drawPhotoPanel(ctx, photo, crop, f, palette, grade, index, unit) {
   ctx.restore();
   if(index!==0) {
     ctx.fillStyle=palette.ink;ctx.font=`700 ${unit*.014}px Studio`;
-    ctx.fillText(index===1?'02 / THE CONNECTION':'03 / THE GETAWAY',unit*.008,f.h+unit*.019);
+    ctx.fillText(index===1?'02 / THE CONNECTION':'03 / THE RIG',unit*.008,f.h+unit*.019);
   }
   ctx.fillStyle=palette.ink;ctx.fillRect(unit*.011,unit*.011,unit*.044,unit*.029);
   lettering(ctx,`0${index+1}`,unit*.018,unit*.032,unit*.017,unit*.032,palette.paper);

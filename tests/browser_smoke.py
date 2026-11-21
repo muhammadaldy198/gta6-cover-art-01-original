@@ -22,8 +22,10 @@ if __name__ == '__main__':
         with page.expect_download() as event:
             page.get_by_role('button', name='Export PNG', exact=True).click()
         download = event.value
-        download.save_as(ROOT / '.qa' / 'smoke-export.png')
-        assert (ROOT / '.qa' / 'smoke-export.png').stat().st_size > 1000
+        output = ROOT / '.qa' / 'revision' / 'smoke-export.png'
+        output.parent.mkdir(parents=True,exist_ok=True)
+        download.save_as(output)
+        assert output.stat().st_size > 1000
         expect(page.get_by_role('status')).to_contain_text('PNG ready')
         print('PASS browser smoke: loaded 3-panel editor and actual PNG download')
         browser.close()

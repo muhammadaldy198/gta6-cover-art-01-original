@@ -45,11 +45,22 @@ for(const path of files) {
     assert.equal(syntax.status,0,syntax.stderr);
   }
 }
-const output=resolve(root,'.qa/output-a');
+const output=resolve(process.argv[2] || resolve(root,'.qa/output-a'));
+for(const directory of ['app','screenshots']) {
+  const sourceRoot=resolve(root,directory),copyRoot=resolve(output,directory);
+  const sourceFiles=walk(sourceRoot).filter(path=>lstatSync(path).isFile());
+  const copiedFiles=walk(copyRoot).filter(path=>lstatSync(path).isFile());
+  assert.deepEqual(copiedFiles.map(path=>relative(copyRoot,path)).sort(),
+    sourceFiles.map(path=>relative(sourceRoot,path)).sort(),`copied file set differs: ${directory}`);
+  for(const path of sourceFiles) {
+    const name=relative(sourceRoot,path);
+    assert.ok(readFileSync(path).equals(readFileSync(resolve(copyRoot,name))),`source bytes differ: ${directory}/${name}`);
+  }
+}
 const dossier=readFileSync(resolve(output,'dossier.json'));
 const rebuilt=Buffer.from(buildDossier(output,{text_max_bytes:163840,screenshots:{max:4,max_bytes:262144},app_max_files:993,app_max_bytes:50331648,app_path_max_bytes:1000}));
 assert.ok(dossier.equals(rebuilt),'dossier differs from unchanged helper reconstruction');
 const outputFiles=walk(output).filter(path=>lstatSync(path).isFile());
 const manifest=outputFiles.map(path=>({path:relative(output,path),bytes:lstatSync(path).size,sha256:createHash('sha256').update(readFileSync(path)).digest('hex')}));
 assert.ok(outputFiles.every(path=>(lstatSync(path).mode&4)!==0),'all output files must be world-readable');
-console.log(JSON.stringify({appFiles:files.length,appEntries:paths.length,appBytes:bytes,localReferences:references,outputFiles:outputFiles.length,dossierBytes:dossier.length,dossierMatches:true,manifest},null,2));
+console.log(JSON.stringify({output,sourceBytesMatch:true,appFiles:files.length,appEntries:paths.length,appBytes:bytes,localReferences:references,outputFiles:outputFiles.length,dossierBytes:dossier.length,dossierMatches:true,manifest},null,2));

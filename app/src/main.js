@@ -14,7 +14,7 @@ let scheduled=0;
 let loading=false;
 
 function defaultPanels() {
-  return [{photo:0,zoom:1,x:50,y:18},{photo:Math.min(1,photos.length-1),zoom:1,x:50,y:0},{photo:0,zoom:1.05,x:0,y:78}];
+  return [{photo:0,zoom:1,x:50,y:18},{photo:Math.min(1,photos.length-1),zoom:1,x:50,y:0},{photo:Math.min(1,photos.length-1),zoom:1.6,x:100,y:84}];
 }
 function announce(message) { $('status').textContent=message; }
 function paint() {

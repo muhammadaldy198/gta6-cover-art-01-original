@@ -33,3 +33,14 @@ test('each layout fits three distinct panels inside all export sizes', async () 
     }
   }
 });
+
+test('supporting shots keep room for their labels above the title zone', async () => {
+  const { panelFrames } = await import('../app/src/geometry.js');
+  // The angled title's right edge sits higher than its left edge.
+  for (const [w,h,layout,cutoff] of [[1920,1080,'dossier',.72],[1080,1350,'dossier',.77],[1080,1080,'split',.708]]) {
+    for (const frame of panelFrames(w,h,layout).slice(1)) {
+      const bottom=frame.y+frame.h+Math.abs(Math.sin(frame.angle))*frame.w/2;
+      assert.ok(bottom+.018*Math.min(w,h)<cutoff*h, `${layout} ${w}×${h}: photo label in title zone`);
+    }
+  }
+});
