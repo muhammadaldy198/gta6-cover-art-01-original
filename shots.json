@@ -1,5 +1,6 @@
 [
-  { "name": "1-cover.jpg", "query": "?shot=cover&photo=pier&caption=Sunset%20Heist", "w": 1080, "h": 1080 },
-  { "name": "2-editor.jpg", "query": "?shot=editor&photo=boulevard&caption=Boulevard%20Queen", "w": 1280, "h": 720 },
-  { "name": "3-cover.jpg", "query": "?shot=cover&photo=boulevard&caption=Boulevard%20Queen", "w": 1080, "h": 1080 }
+  {"name":"01-after-hours-cover.jpg","w":1280,"h":720,"source":"actual 1920x1080 PNG download, resized only","capture":"python3 tests/capture.py","layout":"dossier","grade":"sunset","title":"After Hours"},
+  {"name":"02-after-hours-studio.jpg","w":1280,"h":1080,"source":"unmodified Chrome editor screenshot with loaded kit photos and PNG confirmation","capture":"python3 tests/capture.py"},
+  {"name":"03-last-check-in-portrait.jpg","w":864,"h":1080,"source":"actual 1080x1350 PNG download, resized only","capture":"python3 tests/capture.py","layout":"dossier","grade":"noir","title":"Last Check-In","detailCrop":{"zoom":1.6,"x":0,"y":100}},
+  {"name":"04-neon-alibi-square.jpg","w":1080,"h":1080,"source":"actual 1080x1080 PNG download, JPEG encoding only","capture":"python3 tests/capture.py","layout":"split","grade":"neon","title":"Neon Alibi","detailCrop":{"zoom":1.6,"x":0,"y":100}}
 ]
