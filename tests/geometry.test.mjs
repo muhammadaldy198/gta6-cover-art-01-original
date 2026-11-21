@@ -44,3 +44,22 @@ test('supporting shots keep room for their labels above the title zone', async (
     }
   }
 });
+
+test('angular poster panels interlock without overlaps and hit-testing follows their sloping seams', async () => {
+  const { panelFrames, panelContains } = await import('../app/src/geometry.js');
+  for(const [w,h] of [[1920,1080],[1080,1080],[1080,1350]]) {
+    const frames=panelFrames(w,h,'velocity');
+    assert.equal(frames.length,3);
+    assert.ok(frames.every(f=>f.points?.length===4),'each angular panel needs a real clipping polygon');
+    for(const f of frames) {
+      assert.ok(panelContains(f,f.x+f.w*.5,f.y+f.h*.5),'panel center must remain selectable');
+      assert.ok(!panelContains(f,-1,-1));
+    }
+    for(let y=0;y<h;y+=h/40)for(let x=0;x<w;x+=w/60) {
+      assert.ok(frames.filter(f=>panelContains(f,x,y)).length<=1,'interlocking photo panels must not obscure each other');
+    }
+    const detail=frames[2];
+    assert.ok(detail.w*detail.h>w*h*.09,'detail must be a useful photo region, not a decorative sliver');
+    assert.ok(detail.y+detail.h<h*.79,'detail stays clear of the main title');
+  }
+});

@@ -1,4 +1,5 @@
 import { cropRectangle, panelFrames } from './geometry.js';
+import { printPixels } from './print.js';
 
 export const PALETTES = {
   sunset: { ink:'#101d29', paper:'#fff2d5', accent:'#ff735b', gold:'#ffc566', sea:'#71d4cc', tint:'#ff8b59' },
@@ -28,22 +29,31 @@ export function gradePixel(red, green, blue, grade) {
 }
 
 // Local photo -> inked print: gentle color quantization and luminance contours.
-// Only the two supplied samples or a user's decoded local image enter this cache.
-export function inkPhoto(image, grade) {
+// Only bundled demo assets or a user's decoded local image enter this cache.
+export function inkPhoto(image, grade, finish='photo') {
   let versions = processed.get(image);
   if (!versions) { versions = {}; processed.set(image, versions); }
-  if (versions[grade]) return versions[grade];
+  const key=`${grade}:${finish}`;
+  if (versions[key]) return versions[key];
   const layer = document.createElement('canvas');
-  const scale = Math.min(1, 1300 / Math.max(image.naturalWidth,image.naturalHeight));
-  layer.width = Math.round(image.naturalWidth*scale);
-  layer.height = Math.round(image.naturalHeight*scale);
+  const scale = Math.min(1, (finish==='photo'?1300:960) / Math.max(image.naturalWidth,image.naturalHeight));
+  layer.width = Math.max(1,Math.round(image.naturalWidth*scale));
+  layer.height = Math.max(1,Math.round(image.naturalHeight*scale));
   const g = layer.getContext('2d',{willReadFrequently:true});
-  g.filter = grade === 'noir' ? 'saturate(0.38) contrast(1.18)'
+  g.filter = finish!=='photo' ? 'none' : grade === 'noir' ? 'saturate(0.38) contrast(1.18)'
     : grade === 'sunset' ? 'saturate(0.82) contrast(1.15)'
     : 'saturate(0.86) contrast(1.14)';
   g.drawImage(image,0,0,layer.width,layer.height);
   g.filter='none';
   const pixels = g.getImageData(0,0,layer.width,layer.height);
+  if(finish!=='photo') {
+    pixels.data.set(printPixels(pixels.data,layer.width,layer.height,grade,finish));
+    g.putImageData(pixels,0,0);
+    // At most six prepared images per photo; crop/typing/export never reprocesses pixels.
+    if(Object.keys(versions).length>=6)delete versions[Object.keys(versions)[0]];
+    versions[key]=layer;
+    return layer;
+  }
   const original = new Uint8ClampedArray(pixels.data);
   const { data } = pixels;
   const width = layer.width;
@@ -56,7 +66,8 @@ export function inkPhoto(image, grade) {
     for(let c=0;c<3;c++) data[i+c]=(Math.round(toned[c]/22)*22*.4+toned[c]*.6)*outline;
   }
   g.putImageData(pixels,0,0);
-  versions[grade]=layer;
+  if(Object.keys(versions).length>=6)delete versions[Object.keys(versions)[0]];
+  versions[key]=layer;
   return layer;
 }
 
@@ -96,7 +107,17 @@ function drawPalm(ctx,x,y,size,color) {
   ctx.restore();
 }
 
-function drawPhotoPanel(ctx, photo, crop, f, palette, grade, index, unit) {
+function drawPhotoPanel(ctx, photo, crop, f, palette, grade, index, unit, finish) {
+  if(f.points) {
+    ctx.save();
+    polygon(ctx,f.points,palette.paper);
+    ctx.strokeStyle=palette.paper;ctx.lineWidth=unit*.006;ctx.lineJoin='miter';ctx.stroke();
+    ctx.clip();ctx.translate(f.x,f.y);
+    const r=cropRectangle(photo.naturalWidth,photo.naturalHeight,f.w,f.h,crop);
+    ctx.drawImage(inkPhoto(photo,grade,finish),r.x,r.y,r.width,r.height);
+    ctx.restore();
+    return;
+  }
   ctx.save();
   ctx.translate(f.x+f.w/2,f.y+f.h/2);ctx.rotate(f.angle);ctx.translate(-f.w/2,-f.h/2);
   ctx.shadowColor='#0009';ctx.shadowBlur=unit*.015;ctx.shadowOffsetY=unit*.009;
@@ -106,7 +127,7 @@ function drawPhotoPanel(ctx, photo, crop, f, palette, grade, index, unit) {
   ctx.shadowBlur=0;ctx.shadowOffsetY=0;
   ctx.save();ctx.beginPath();ctx.rect(0,0,f.w,f.h);ctx.clip();
   const r=cropRectangle(photo.naturalWidth,photo.naturalHeight,f.w,f.h,crop);
-  ctx.drawImage(inkPhoto(photo,grade),r.x,r.y,r.width,r.height);
+  ctx.drawImage(inkPhoto(photo,grade,finish),r.x,r.y,r.width,r.height);
   const tint=ctx.createLinearGradient(0,0,f.w,f.h);
   tint.addColorStop(0,grade==='neon'?'#343b7829':'#ffc56612');
   tint.addColorStop(.55,'#ff735b00');tint.addColorStop(1,`${palette.accent}55`);
@@ -158,6 +179,55 @@ function drawTitleRibbon(ctx,w,h,state,p) {
   ctx.restore();
 }
 
+function drawCoastlineTitle(ctx,w,h,state,p) {
+  const wide=w/h>1.35,u=Math.min(w,h);
+  // A single hard-cut stage for lettering, not a stack of postcard borders.
+  ctx.fillStyle=p.ink;ctx.fillRect(0,h*.86,w,h*.14);
+  ctx.save();
+  const text=(state.title.trim()||'YOUR STORY').toUpperCase();
+  const size=h*(wide?.270:.180);
+  ctx.font=`700 ${size}px Studio`;
+  const measured=ctx.measureText(text).width;
+  ctx.translate(w*.052,h*.938);ctx.rotate(-.042);
+  ctx.transform(Math.min(1.18,w*.885/Math.max(measured,1)),0,-.13,1,0,0);
+  ctx.lineJoin='round';ctx.miterLimit=2;
+  ctx.lineWidth=u*.019;ctx.strokeStyle=p.ink;
+  ctx.strokeText(text,u*.010,u*.009);
+  ctx.lineWidth=u*.010;ctx.strokeStyle=p.paper;ctx.strokeText(text,0,0);
+  ctx.lineWidth=u*.004;ctx.strokeStyle=p.ink;ctx.strokeText(text,0,0);
+  const face=ctx.createLinearGradient(0,-size*.75,0,0);
+  face.addColorStop(0,p.paper);face.addColorStop(.43,p.gold);
+  face.addColorStop(.46,p.gold);face.addColorStop(.47,p.accent);face.addColorStop(1,p.accent);
+  ctx.fillStyle=face;ctx.fillText(text,0,0);
+  ctx.restore();
+}
+
+function drawSevenTitle(ctx,w,h,state,p) {
+  const u=Math.min(w,h),wide=w/h>1.35;
+  const text=(state.title.trim()||'YOUR STORY').toUpperCase();
+  let lines=[text];
+  if(text.length>17 && text.includes(' ')) {
+    const words=text.split(/\s+/);let split=1;
+    for(let i=1;i<words.length;i++)if(Math.abs(words.slice(0,i).join(' ').length-text.length/2)<Math.abs(words.slice(0,split).join(' ').length-text.length/2))split=i;
+    lines=[words.slice(0,split).join(' '),words.slice(split).join(' ')];
+  }
+  const size=h*(lines.length===2?(wide?.13:.09):(wide?.21:.145));
+  ctx.save();ctx.translate(w*.075,h*(lines.length===2?.80:.89));ctx.rotate(-.035);
+  ctx.font=`700 ${size}px Studio`;ctx.lineJoin='round';ctx.miterLimit=2;
+  const width=Math.max(...lines.map(line=>ctx.measureText(line).width));
+  ctx.transform(Math.min(1.18,w*.84/Math.max(width,1)),0,-.12,1,0,0);
+  lines.forEach((line,i)=>{
+    const y=i*size*.88;
+    ctx.lineWidth=u*.027;ctx.strokeStyle='#25162f';ctx.strokeText(line,u*.010,y+u*.014);
+    ctx.lineWidth=u*.014;ctx.strokeStyle='#fff0d1';ctx.strokeText(line,0,y);
+    ctx.lineWidth=u*.005;ctx.strokeStyle='#39213c';ctx.strokeText(line,0,y);
+    const fill=ctx.createLinearGradient(0,y-size*.8,0,y);
+    fill.addColorStop(0,'#fff1cd');fill.addColorStop(.42,'#ffc797');fill.addColorStop(.48,'#fff1cd');fill.addColorStop(.49,'#f49b91');fill.addColorStop(1,'#ed7286');
+    ctx.fillStyle=fill;ctx.fillText(line,0,y);
+  });
+  ctx.restore();
+}
+
 export function drawCover(canvas,photos,state) {
   const ctx=canvas.getContext('2d');
   const w=canvas.width,h=canvas.height,u=Math.min(w,h),wide=w/h>1.35;
@@ -165,28 +235,44 @@ export function drawCover(canvas,photos,state) {
   ctx.clearRect(0,0,w,h);ctx.fillStyle=p.ink;ctx.fillRect(0,0,w,h);
   const sky=ctx.createLinearGradient(0,0,w,h);
   sky.addColorStop(0,p.ink);sky.addColorStop(.45,'#283d43');sky.addColorStop(1,p.accent);
-  ctx.fillStyle=sky;ctx.fillRect(w*.018,h*.065,w*.964,h*.865);
-  ctx.fillStyle=p.gold;ctx.beginPath();ctx.arc(w*.47,h*.40,u*.23,0,Math.PI*2);ctx.fill();
-  ctx.save();ctx.globalAlpha=.28;
-  for(let i=0;i<9;i++){ctx.fillStyle=p.ink;ctx.fillRect(w*.18,h*(.41+i*.024),w*.65,h*(.004+i*.001));}
-  ctx.restore();
-  drawPalm(ctx,w*.028,h*.14,u*.43,p.ink);drawPalm(ctx,w*.945,h*.19,u*.60,p.ink);
+  if(!['velocity','seven'].includes(state.layout)) {
+    ctx.fillStyle=sky;ctx.fillRect(w*.018,h*.065,w*.964,h*.865);
+    ctx.fillStyle=p.gold;ctx.beginPath();ctx.arc(w*.47,h*.40,u*.23,0,Math.PI*2);ctx.fill();
+    ctx.save();ctx.globalAlpha=.28;
+    for(let i=0;i<9;i++){ctx.fillStyle=p.ink;ctx.fillRect(w*.18,h*(.41+i*.024),w*.65,h*(.004+i*.001));}
+    ctx.restore();
+    drawPalm(ctx,w*.028,h*.14,u*.43,p.ink);drawPalm(ctx,w*.945,h*.19,u*.60,p.ink);
+  }
   const frames=panelFrames(w,h,state.layout);
   frames.forEach((frame,index)=>{
     const crop=state.panels[index];const photo=photos[crop.photo]?.image;
-    if(photo) drawPhotoPanel(ctx,photo,crop,frame,p,state.grade,index,u);
+    if(photo) drawPhotoPanel(ctx,photo,crop,frame,p,state.grade,index,u,state.finish);
   });
-  ctx.fillStyle=p.ink;ctx.fillRect(0,0,w,h*.067);
-  lettering(ctx,(state.location.trim()||'PALM COAST').toUpperCase(),w*.03,h*.045,h*.026,w*.48,p.paper);
+  if(state.layout==='seven') {
+    // Draw seams after all photos, so gutter width never depends on paint order.
+    for(const frame of frames) {
+      polygon(ctx,frame.points,'#0000');ctx.lineJoin='round';
+      ctx.strokeStyle='#25162f';ctx.lineWidth=u*.009;ctx.stroke();
+      ctx.strokeStyle='#fff0d1';ctx.lineWidth=u*.002;ctx.stroke();
+    }
+    const shade=ctx.createLinearGradient(0,h*.64,0,h);
+    shade.addColorStop(0,'#25162f00');shade.addColorStop(1,'#25162f99');
+    ctx.fillStyle=shade;ctx.fillRect(0,h*.64,w,h*.36);
+  }
+  const seven=state.layout==='seven';
+  ctx.fillStyle=p.ink;ctx.fillRect(0,0,w,h*(seven?.033:.067));
+  lettering(ctx,(state.location.trim()||'PALM COAST').toUpperCase(),w*.03,h*(seven?.024:.045),h*(seven?.018:.026),w*.48,p.paper);
   ctx.save();ctx.textAlign='right';ctx.font=`700 ${h*.015}px Studio`;ctx.fillStyle=p.gold;
-  ctx.fillText('AN AFTER HOURS ORIGINAL',w*.97,h*.043);ctx.restore();
-  drawMotelStamp(ctx,w*(wide?.449:.31),h*(wide?.48:.49),u*(wide?.15:.14),p,state.stamp);
-  drawTitleRibbon(ctx,w,h,state,p);
+  ctx.fillText(['velocity','seven'].includes(state.layout)?`AFTER HOURS ORIGINAL / ${state.stamp.trim().toUpperCase()}`:'AN AFTER HOURS ORIGINAL',w*.97,h*(seven?.023:.043),w*.46);ctx.restore();
+  if(!['velocity','seven'].includes(state.layout))drawMotelStamp(ctx,w*(wide?.449:.31),h*(wide?.48:.49),u*(wide?.15:.14),p,state.stamp);
+  if(state.layout==='seven')drawSevenTitle(ctx,w,h,state,p);
+  else if(state.layout==='velocity')drawCoastlineTitle(ctx,w,h,state,p);
+  else drawTitleRibbon(ctx,w,h,state,p);
   ctx.fillStyle=p.ink;ctx.fillRect(0,h*.944,w,h*.056);
   lettering(ctx,state.subtitle.trim(),w*.035,h*.978,h*(wide?.025:.021),w*.79,p.paper);
   ctx.fillStyle=p.gold;
   // A little film-edge device rather than an unrelated badge or logo.
-  for(let i=0;i<5;i++)ctx.fillRect(w*(.89+i*.015),h*.965,w*.008,h*.013);
+  if(!['velocity','seven'].includes(state.layout))for(let i=0;i<5;i++)ctx.fillRect(w*(.89+i*.015),h*.965,w*.008,h*.013);
   if(state.texture==='print') {
     ctx.save();ctx.globalAlpha=.075;
     for(let i=0;i<3200;i++) {

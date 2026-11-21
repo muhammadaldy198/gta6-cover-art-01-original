@@ -1,25 +1,24 @@
 import { drawCover } from './cover.js';
-import { cropRectangle, panelFrames } from './geometry.js';
+import { cropRectangle, panelFrames, panelContains } from './geometry.js';
 import { querySettings } from './shots.js';
+import { PANEL_NAMES, DEMO_SOURCES, demoPanels, startingCrop, replacePanel, fillPanels } from './panels.js';
 
 const $ = id => document.getElementById(id);
 const canvas=$('cover');
 const initial=querySettings(new URLSearchParams(location.search));
-const panelNames=['hero','snapshot','detail'];
+const panelNames=PANEL_NAMES;
 const photos=[];
 const state={ title:initial.title,subtitle:initial.subtitle,location:'Palm Coast',stamp:'ROOM 07',
-  layout:initial.layout,grade:initial.grade,texture:'print',panels:[] };
+  layout:initial.layout,grade:initial.grade,finish:initial.finish,texture:'print',panels:[] };
 let selected=0;
 let scheduled=0;
 let loading=false;
 
-function defaultPanels() {
-  return [{photo:0,zoom:1,x:50,y:18},{photo:Math.min(1,photos.length-1),zoom:1,x:50,y:0},{photo:Math.min(1,photos.length-1),zoom:1.6,x:100,y:84}];
-}
+
 function announce(message) { $('status').textContent=message; }
 function paint() {
   scheduled=0;
-  if(!photos.length || state.panels.length!==3)return;
+  if(!photos.length || state.panels.length!==7)return;
   drawCover(canvas,photos,state);
   canvas.dataset.rendered=String(Number(canvas.dataset.rendered||0)+1);
 }
@@ -49,6 +48,7 @@ function updateCropControls() {
   $('zoom').setAttribute('aria-valuetext',`${crop.zoom.toFixed(2)} times`);
   $('selected-note').textContent=`Editing ${panelNames[selected]} · drag photo to reposition`;
   document.querySelectorAll('[data-panel]').forEach(button=>{
+    button.hidden=Number(button.dataset.panel)>=panelFrames(canvas.width,canvas.height,state.layout).length;
     const active=Number(button.dataset.panel)===selected;
     button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));
   });
@@ -67,7 +67,7 @@ function syncPhotos() {
     const thumb=document.createElement('img');thumb.src=photo.url;thumb.alt='';
     const number=document.createElement('span');number.textContent=String(index+1).padStart(2,'0');
     button.append(thumb,number);
-    button.addEventListener('click',()=>{state.panels[selected]={photo:index,zoom:1,x:50,y:50};updateCropControls();redraw();});
+    button.addEventListener('click',()=>{state.panels=replacePanel(state.panels,selected,index);updateCropControls();redraw();});
     $('photo-tray').append(button);
   });
   $('photo-count').textContent=`${photos.length} photos loaded · choose a frame below the preview`;
@@ -77,12 +77,11 @@ async function loadSamples() {
   if(loading)return;
   loading=true;$('export').disabled=true;announce('Loading local sample photos…');
   try {
-    const definitions=[['Boulevard · kit sample','./samples/boulevard.jpg'],['Pier · kit sample','./samples/pier.jpg']];
-    const loaded=await Promise.all(definitions.map(async([name,url])=>({name,url,image:await loadImage(url)})));
+    const loaded=await Promise.all(DEMO_SOURCES.map(async({name,path})=>{const url='./'+path;return {name,url,image:await loadImage(url)};}));
     photos.forEach(photo=>{if(photo.local)URL.revokeObjectURL(photo.url);});
-    photos.splice(0,photos.length,...loaded);state.panels=defaultPanels();
+    photos.splice(0,photos.length,...loaded);state.panels=demoPanels();
     selected=0;syncPhotos();paint();$('export').disabled=false;
-    announce('2 kit samples loaded. Your cover is ready to export.');
+    announce('7 distinct demo images loaded. Your cover is ready to export.');
     window.__shotReady=true;
   } catch(error) {announce(error.message);} finally {loading=false;}
 }
@@ -92,19 +91,19 @@ async function addPhotos(files) {
   let added=0,failed=0;
   try {
     for(const file of files) {
-      if(photos.length>=12){failed++;continue;}
+      if(photos.length>=24){failed++;continue;}
       if(!/^image\/(jpeg|png|webp|avif)$/.test(file.type)||file.size>25*1024*1024){failed++;continue;}
       const url=URL.createObjectURL(file);
       try {
         const image=await loadImage(url);
         if(image.naturalWidth*image.naturalHeight>60000000)throw new Error('Image too large');
         photos.push({name:file.name.slice(0,70),url,image,local:true});
-        if(added<3)state.panels[(selected+added)%3]={photo:photos.length-1,zoom:1,x:50,y:50};
+        if(added<7)state.panels=replacePanel(state.panels,(selected+added)%7,photos.length-1);
         added++;
       }catch{URL.revokeObjectURL(url);failed++;}
     }
     syncPhotos();paint();
-    announce(added?`${added} local photo${added===1?'':'s'} loaded. Nothing was uploaded.${failed?' Some files were skipped (use JPG/PNG/WebP under 25 MB; max 12 photos).':''}`:'No photos added. Use JPG, PNG or WebP under 25 MB (max 12 photos).');
+    announce(added?`${added} local photo${added===1?'':'s'} loaded. Nothing was uploaded.${failed?' Some files were skipped (use JPG/PNG/WebP under 25 MB; max 24 photos).':''}`:'No photos added. Use JPG, PNG or WebP under 25 MB (max 24 photos).');
   } finally {loading=false;$('photos').value='';$('export').disabled=photos.length===0;}
 }
 function exportPng() {
@@ -121,10 +120,11 @@ function exportPng() {
   },'image/png');
 }
 
-for(const id of ['title','subtitle','location','stamp','layout','grade','texture']) {
+for(const id of ['title','subtitle','location','stamp','layout','grade','finish','texture']) {
   $(id).value=state[id];
-  $(id).addEventListener(['layout','grade','texture'].includes(id)?'change':'input',()=>{
+  $(id).addEventListener(['layout','grade','finish','texture'].includes(id)?'change':'input',()=>{
     state[id]=$(id).value;
+    if(id==='layout'){selected=0;updateCropControls();}
     if(id==='title')$('title-count').textContent=`${state.title.length} / 26`;
     redraw();
   });
@@ -135,18 +135,18 @@ $('samples').addEventListener('click',loadSamples);
 $('photos').addEventListener('change',event=>addPhotos([...event.target.files]));
 $('export').addEventListener('click',exportPng);
 $('reset').addEventListener('click',()=>{
-  for(const [id,value]of Object.entries({title:'After Hours',subtitle:'One last score. No way back.',location:'Palm Coast',stamp:'ROOM 07',layout:'dossier',grade:'sunset',texture:'print'})){
+  for(const [id,value]of Object.entries({title:'After Hours',subtitle:'One last score. No way back.',location:'Palm Coast',stamp:'ROOM 07',layout:'seven',grade:'sunset',finish:'illustrated',texture:'print'})){
     state[id]=value;$(id).value=value;
   }
   $('title-count').textContent='11 / 26';$('size').value='1920x1080';updateSize();loadSamples();
 });
 document.querySelectorAll('[data-panel]').forEach(button=>button.addEventListener('click',()=>selectPanel(Number(button.dataset.panel))));
 $('panel-photo').addEventListener('change',()=>{
-  state.panels[selected]={photo:Number($('panel-photo').value),zoom:1,x:50,y:50};updateCropControls();redraw();
+  state.panels=replacePanel(state.panels,selected,Number($('panel-photo').value));updateCropControls();redraw();
 });
 $('fill-all').addEventListener('click',()=>{
-  const photo=state.panels[selected].photo;state.panels=state.panels.map(()=>({photo,zoom:1,x:50,y:50}));
-  updateCropControls();redraw();announce('One photo, three independent crops. Choose each frame to recompose.');
+  const photo=state.panels[selected].photo;state.panels=fillPanels(state.panels,photo);
+  updateCropControls();redraw();announce('One photo, seven independent crops. Choose each frame to recompose.');
 });
 $('crop-reset').addEventListener('click',()=>{
   Object.assign(state.panels[selected],{zoom:1,x:50,y:50});updateCropControls();redraw();
@@ -161,7 +161,7 @@ canvas.addEventListener('pointerdown',event=>{
   const x=(event.clientX-rect.left)/rect.width*canvas.width,y=(event.clientY-rect.top)/rect.height*canvas.height;
   const frames=panelFrames(canvas.width,canvas.height,state.layout);
   let hit=-1;
-  frames.forEach((f,i)=>{if(x>=f.x&&x<=f.x+f.w&&y>=f.y&&y<=f.y+f.h)hit=i;});
+  frames.forEach((f,i)=>{if(panelContains(f,x,y))hit=i;});
   if(hit<0)return;
   selectPanel(hit);canvas.setPointerCapture(event.pointerId);
   const crop=state.panels[selected],f=frames[selected],image=photos[crop.photo].image;

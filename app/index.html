@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#101d29">
-  <meta name="description" content="Turn your own photos into a cinematic three-panel cover. Private, offline, yours.">
+  <meta name="description" content="Turn your own photos into a cinematic seven-panel cover. Private, offline, yours.">
   <title>After Hours — Cover Studio</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./style.css">
@@ -18,7 +18,7 @@
   </header>
   <main id="studio" class="studio">
     <aside class="controls" aria-label="Cover controls">
-      <div class="intro"><p class="eyebrow">Your photos. A different story.</p><h1>Make your<br>own getaway.</h1><p>Three frames. One cover. All yours.</p></div>
+      <div class="intro"><p class="eyebrow">Your photos. A different story.</p><h1>Make your<br>own getaway.</h1><p>Seven scenes. One cover. All yours.</p></div>
       <section class="control-section" aria-labelledby="photos-heading">
         <div class="section-heading"><h2 id="photos-heading">Photos</h2><button id="samples" class="text-button" type="button">Load kit samples</button></div>
         <label class="upload" for="photos"><span aria-hidden="true">＋</span> Add your photos <small>JPG, PNG, WebP · stays on your device</small></label>
@@ -30,14 +30,15 @@
         <h2 id="story-heading">The story</h2>
         <label for="title">Title <span id="title-count" class="counter" aria-hidden="true">11 / 26</span></label><input id="title" type="text" maxlength="26" value="After Hours" autocomplete="off">
         <label for="subtitle">Caption</label><input id="subtitle" type="text" maxlength="68" value="One last score. No way back." autocomplete="off">
-        <div class="field-row"><div><label for="location">Location</label><input id="location" type="text" maxlength="24" value="Palm Coast"></div><div><label for="stamp">Key tag</label><input id="stamp" type="text" maxlength="12" value="ROOM 07"></div></div>
+        <div class="field-row"><div><label for="location">Location</label><input id="location" type="text" maxlength="24" value="Palm Coast"></div><div><label for="stamp">Edition / key tag</label><input id="stamp" type="text" maxlength="12" value="ROOM 07"></div></div>
       </section>
       <section class="control-section" aria-labelledby="look-heading">
         <h2 id="look-heading">Art direction</h2>
-        <label for="layout">Layout</label><select id="layout"><option value="dossier">The dossier</option><option value="split">Split scene</option><option value="triptych">Three suspects</option></select>
+        <label for="layout">Layout</label><select id="layout"><option value="seven">Seven-scene getaway</option><option value="velocity">Coastline cut · 3 panels</option><option value="dossier">The dossier · 3 panels</option><option value="split">Split scene · 3 panels</option><option value="triptych">Three suspects</option></select>
+        <label for="finish">Photo treatment</label><select id="finish"><option value="illustrated">Illustrated ink</option><option value="screenprint">Screen print</option><option value="photo">Cinematic photo</option></select>
         <div class="field-row"><div><label for="grade">Color grade</label><select id="grade"><option value="sunset">Coral hour</option><option value="neon">Neon tide</option><option value="noir">Midnight gold</option></select></div><div><label for="texture">Ink texture</label><select id="texture"><option value="print">Printed</option><option value="clean">Clean</option></select></div></div>
       </section>
-      <p class="credits">Built for your own stories. Original artwork.<br>Demo photos: make.fun kit, AI-generated.</p>
+      <p class="credits">Two fictional kit portraits, four CC0 scene photos, one original motel illustration. All included locally. Photo credits in README.</p>
     </aside>
     <section class="workspace" aria-labelledby="preview-heading">
       <div class="workspace-toolbar"><div><h2 id="preview-heading">Cover preview</h2><p><span class="live-dot"></span> Live canvas <span class="toolbar-separator">/</span> <span id="dimensions">1920 × 1080</span></p></div><label class="size-label" for="size">Output size<select id="size"><option value="1920x1080">Landscape · 1920 × 1080</option><option value="1080x1080">Square · 1080 × 1080</option><option value="1080x1350">Portrait · 1080 × 1350</option></select></label></div>
@@ -45,7 +46,7 @@
       <div class="preview-note"><span id="selected-note">Editing hero · drag photo to reposition</span><button id="full-preview" class="text-button" type="button">View cover only ↗</button></div>
       <section class="panel-editor" aria-label="Independent panel crop controls">
         <div class="panel-heading"><h2>Frame your story</h2><span class="hint">Select a panel. Make it yours.</span></div>
-        <div class="panel-tabs" role="group" aria-label="Choose panel"><button data-panel="0" class="active" aria-pressed="true" type="button"><span>01</span> Hero</button><button data-panel="1" aria-pressed="false" type="button"><span>02</span> Snapshot</button><button data-panel="2" aria-pressed="false" type="button"><span>03</span> Detail</button></div>
+        <div class="panel-tabs" role="group" aria-label="Choose panel"><button data-panel="0" class="active" aria-pressed="true" type="button">Hero</button><button data-panel="1" aria-pressed="false" type="button">Connection</button><button data-panel="2" aria-pressed="false" type="button">Car</button><button data-panel="3" aria-pressed="false" type="button">City</button><button data-panel="4" aria-pressed="false" type="button">Palms</button><button data-panel="5" aria-pressed="false" type="button">Motel</button><button data-panel="6" aria-pressed="false" type="button">Water</button></div>
         <div class="crop-controls"><div class="source-control"><label for="panel-photo">Photo for this panel</label><select id="panel-photo"></select><button id="fill-all" class="text-button" type="button">Use this photo in all panels</button></div><div class="sliders"><label for="zoom">Zoom <output id="zoom-value">1.00×</output></label><input id="zoom" type="range" min="100" max="300" value="100"><label for="pan-x">Horizontal <output id="pan-x-value">50%</output></label><input id="pan-x" type="range" min="0" max="100" value="50"><label for="pan-y">Vertical <output id="pan-y-value">50%</output></label><input id="pan-y" type="range" min="0" max="100" value="50"></div><button id="crop-reset" class="quiet" type="button">Reset crop</button></div>
       </section>
       <footer class="export-bar"><div><strong>Ready for the getaway?</strong><p id="status" role="status" aria-live="polite">Loading the studio…</p></div><button id="export" class="export-button" type="button" disabled><span aria-hidden="true">↓</span> Export PNG</button></footer>

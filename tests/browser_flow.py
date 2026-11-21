@@ -41,13 +41,18 @@ with sync_playwright() as p:
     page.wait_for_load_state('networkidle')
     assert not errors,errors
     passed('startup without JavaScript errors')
-    expect(page.locator('[data-panel]')).to_have_count(3)
-    expect(page.locator('#photo-tray button')).to_have_count(2)
-    passed('two local samples automatically fill three panels')
+    expect(page.locator('[data-panel]:visible')).to_have_count(7)
+    expect(page.locator('#photo-tray button')).to_have_count(7)
+    sources=[]
+    for index in range(7):
+        page.locator(f'[data-panel="{index}"]').click()
+        sources.append(page.locator('#panel-photo').input_value())
+    assert len(set(sources))==7
+    passed('seven different local sources automatically fill seven panels')
     page.locator('[data-panel="2"]').click()
-    assert page.locator('#panel-photo').input_value()=='1'
-    assert [page.locator(selector).input_value() for selector in ['#zoom','#pan-x','#pan-y']]==['160','100','84']
-    passed('studio opens with the intended pier detail crop')
+    assert page.locator('#panel-photo').input_value()=='2'
+    assert [page.locator(selector).input_value() for selector in ['#zoom','#pan-x','#pan-y']]==['100','50','50']
+    passed('car panel starts with its own independent scene crop')
     page.locator('[data-panel="0"]').click()
     before=page.locator('#cover').evaluate('(c)=>c.toDataURL()')
     page.get_by_role('textbox',name='Title',exact=True).fill('Night Run')
@@ -68,23 +73,23 @@ with sync_playwright() as p:
     assert [page.locator(x).input_value() for x in ['#zoom','#pan-x','#pan-y']]==['100','50','50']
     page.locator('#panel-photo').select_option('1')
     page.get_by_role('button',name='Use this photo in all panels').click()
-    for index in range(3):
+    for index in range(7):
         page.locator(f'[data-panel="{index}"]').click()
         assert page.locator('#panel-photo').input_value()=='1'
     passed('single-photo fill and crop reset')
-    for layout in ['dossier','split','triptych']:
+    for layout in ['seven','velocity','dossier','split','triptych']:
         page.get_by_label('Layout',exact=True).select_option(layout)
         for grade in ['sunset','neon','noir']:
             old=page.locator('#cover').get_attribute('data-rendered')
             page.get_by_label('Color grade',exact=True).select_option(grade)
             page.wait_for_function('(old)=>document.querySelector("#cover").dataset.rendered!==old',arg=old)
-    passed('all three layouts and grades redraw without error')
+    passed('all five layouts and three grades redraw without error')
     page.get_by_role('button',name='Reset studio').click()
-    expect(page.get_by_role('status')).to_contain_text('2 kit samples loaded')
+    expect(page.get_by_role('status')).to_contain_text('7 distinct demo images loaded')
     context.set_offline(True)
     page.locator('#photos').set_input_files([str(ROOT/'app/samples/pier.jpg'),str(ROOT/'app/samples/boulevard.jpg')])
     expect(page.get_by_role('status')).to_contain_text('2 local photos loaded')
-    expect(page.locator('#photo-tray button')).to_have_count(4)
+    expect(page.locator('#photo-tray button')).to_have_count(9)
     passed('real multi-file input loads both kit photos with network offline')
     page.locator('#photos').set_input_files({'name':'bad.png','mimeType':'image/png','buffer':b'not an image'})
     expect(page.get_by_role('status')).to_contain_text('No photos added')
@@ -96,14 +101,14 @@ with sync_playwright() as p:
     passed('actual PNG downloads verify at all three required dimensions offline')
     context.set_offline(False)
     page.get_by_role('button',name='Load kit samples').click()
-    expect(page.locator('#photo-tray button')).to_have_count(2)
+    expect(page.locator('#photo-tray button')).to_have_count(7)
     page.get_by_role('button',name='Reset studio').click()
-    expect(page.get_by_role('status')).to_contain_text('2 kit samples loaded')
+    expect(page.get_by_role('status')).to_contain_text('7 distinct demo images loaded')
     # Drag inside the hero after zooming: both viewport and image-overflow math are exercised.
     value(page,'#zoom',180)
     rect=page.locator('#cover').bounding_box()
-    page.mouse.move(rect['x']+rect['width']*.75,rect['y']+rect['height']*.35)
-    page.mouse.down();page.mouse.move(rect['x']+rect['width']*.70,rect['y']+rect['height']*.40,steps=4);page.mouse.up()
+    page.mouse.move(rect['x']+rect['width']*.50,rect['y']+rect['height']*.35)
+    page.mouse.down();page.mouse.move(rect['x']+rect['width']*.45,rect['y']+rect['height']*.40,steps=4);page.mouse.up()
     assert page.locator('#pan-x').input_value()!='50'
     passed('pointer drag updates the selected panel crop')
     page.get_by_role('button',name='View cover only').click()

@@ -1,6 +1,6 @@
 [
-  {"name":"01-after-hours-cover.jpg","w":1280,"h":720,"source":"actual 1920x1080 PNG download, resized and encoded as JPEG","capture":"python3 tests/capture.py","layout":"dossier","grade":"sunset","title":"After Hours","detailCrop":{"zoom":1.6,"x":100,"y":84}},
-  {"name":"02-after-hours-studio.jpg","w":1280,"h":960,"source":"unmodified Chrome editor viewport with full artwork, local photo controls and export visible","capture":"python3 tests/capture.py"},
-  {"name":"03-last-check-in-portrait.jpg","w":864,"h":1080,"source":"actual 1080x1350 PNG download, resized and encoded as JPEG","capture":"python3 tests/capture.py","layout":"dossier","grade":"noir","title":"Last Check-In","detailCrop":{"zoom":2.1,"x":100,"y":83}},
-  {"name":"04-neon-alibi-square.jpg","w":1080,"h":1080,"source":"actual 1080x1080 PNG download, JPEG encoding only","capture":"python3 tests/capture.py","layout":"split","grade":"neon","title":"Neon Alibi","heroCrop":{"zoom":1,"x":50,"y":9},"detailCrop":{"zoom":1.8,"x":100,"y":80}}
+  {"name":"01-after-hours-cover.jpg","w":1280,"h":720,"source":"actual 1920x1080 PNG download, resized and JPEG-encoded","capture":"python3 tests/capture.py","layout":"seven","grade":"sunset","title":"After Hours","sources":7},
+  {"name":"02-after-hours-studio.jpg","w":1280,"h":1080,"source":"unmodified Chrome editor viewport; a real local photo upload replaces the hero, six other independent sources retained","capture":"python3 tests/capture.py"},
+  {"name":"03-last-check-in-portrait.jpg","w":864,"h":1080,"source":"actual 1080x1350 PNG download, resized and JPEG-encoded","capture":"python3 tests/capture.py","layout":"seven","grade":"sunset","title":"Last Check-In","sources":7},
+  {"name":"04-coast-is-clear-square.jpg","w":1080,"h":1080,"source":"actual 1080x1080 PNG download, JPEG encoding only","capture":"python3 tests/capture.py","layout":"seven","grade":"sunset","title":"Coast Is Clear","sources":7}
 ]

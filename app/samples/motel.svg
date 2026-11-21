@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#42204e"/><stop offset="1" stop-color="#ff9b77"/></linearGradient><linearGradient id="wall" x2="0" y2="1"><stop stop-color="#f4d49e"/><stop offset="1" stop-color="#d77277"/></linearGradient></defs>
+<path fill="url(#sky)" d="M0 0h1200v900H0z"/><circle cx="940" cy="370" r="190" fill="#ffc979"/>
+<path fill="#37223e" d="M0 595l180-42 145 26 240-45 280 46 355-68v388H0z"/>
+<path fill="url(#wall)" stroke="#251c35" stroke-width="14" d="M265 420h850v310H265z"/><path fill="#fce6bb" stroke="#251c35" stroke-width="12" d="M250 412h890v48H250zm0 145h890v37H250z"/>
+<g fill="#294352" stroke="#251c35" stroke-width="12"><path d="M330 485h115v65H330zm210 0h115v65H540zm210 0h115v65H750zm210 0h115v65H960zM330 625h115v102H330zm210 0h115v102H540zm210 0h115v102H750zm210 0h115v102H960z"/></g>
+<g stroke="#ffe8b4" stroke-width="8"><path d="M387 485v65m210-65v65m210-65v65m210-65v65"/></g>
+<path stroke="#251c35" stroke-width="24" d="M210 250v515"/><path fill="#251c35" stroke="#f5b8ae" stroke-width="8" d="M65 140h300l-35 185H98z"/>
+<g font-family="sans-serif" font-weight="900" text-anchor="middle"><text x="215" y="218" font-size="55" fill="#fff1ca">MOTEL</text><text x="210" y="280" font-size="25" fill="#fd9d99">AFTER HOURS</text></g>
+<path fill="#ffb084" stroke="#251c35" stroke-width="9" d="M60 355h300l-30 75H90z"/><text x="210" y="405" font-family="sans-serif" font-size="37" font-weight="900" text-anchor="middle" fill="#392338">VACANCY</text>
+<path fill="#291e36" d="M0 755h1200v145H0z"/><path stroke="#f6bc94" stroke-width="9" d="M0 820h210m110 0h210m110 0h210m110 0h240"/>
+<g fill="#292039"><path d="M1060 560q-70-250 15-450l16 3q-78 210-7 447z"/><path d="M1080 125q-132-89-210 32 107-68 210-13-60-129-137-116 81 12 137 106 26-142 107-115-71 11-95 116 109-108 181-10-85-42-181 26 68-3 104 96-68-60-107-96-91 56-123 124 14-103 114-144z"/></g>
+</svg>
